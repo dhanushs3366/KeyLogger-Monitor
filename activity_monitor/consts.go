@@ -1,5 +1,10 @@
 package activitymonitor
 
+const (
+	SYS_PATH = "/sys/class/input"
+	DEV_PATH = "/dev/input"
+)
+
 type Click uint
 
 const (
@@ -32,7 +37,7 @@ const (
 
 type devices []string
 
-var AllowedDevices = devices{"Asus Keyboard"}
+var AllowedDevices = devices{"Asus Keyboard", "LangTu USB Keyboard", "Razer Razer Viper 8KHz"}
 
 /*
 	@TODO:

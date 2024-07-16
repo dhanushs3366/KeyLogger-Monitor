@@ -1,8 +1,6 @@
 package activitymonitor
 
 import (
-	"log"
-
 	activitylogger "github.com/dhanushs3366/activity-logger"
 )
 
@@ -30,38 +28,38 @@ func CategorizeEvent(inputEvent activitylogger.InputEvent) Click {
 	case uint16(BTN_FORWARD):
 		return EXT_MOUSE_2
 	case uint16(BTN_BACK):
+		return MSC
 	case uint16(BTN_TASK):
+		return MSC
 	default:
 		return MSC
 	}
-	return MSC
+
 }
 
 func UpdateLogFromEventType(eventType Click, activity *LoggedActivity) {
-	log.SetPrefix("From Updating log")
+
 	switch eventType {
 	case KEYBOARD_CLICK:
 		activity.Key++
-		log.Println(activity)
 
 	case LT_MOUSE:
 		activity.LeftClicks++
-		log.Println(activity)
 
 	case RT_MOUSE:
 		activity.RightClicks++
-		log.Println(activity)
 
 	case MID_MOUSE:
 		activity.MiddleClicks++
-		log.Println(activity)
 
 	case EXT_MOUSE_1:
+		activity.ExtraClicks++
 	case EXT_MOUSE_2:
+		activity.ExtraClicks++
 	case MSC:
+		activity.ExtraClicks++
 	default:
 		activity.ExtraClicks++
-		log.Println(activity)
 	}
 
 }
