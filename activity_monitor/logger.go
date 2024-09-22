@@ -15,6 +15,7 @@ import (
 	"time"
 
 	activitylogger "github.com/dhanushs3366/activity-logger"
+	"github.com/joho/godotenv"
 )
 
 type LoggedActivity struct {
@@ -41,10 +42,12 @@ func SetupLoggers(devEvents []uint) ([]activitylogger.Keylogger, error) {
 
 func sendRequest(method, url string, buff *bytes.Buffer) error {
 	req, err := http.NewRequest(method, url, buff)
+	auth_token := os.Getenv("LOG_TOKEN")
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("auth_token", fmt.Sprintf("Bearer %s", auth_token))
 	client := http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -56,6 +59,14 @@ func sendRequest(method, url string, buff *bytes.Buffer) error {
 }
 
 func SendDataFromLogger(keylogger activitylogger.Keylogger, delay time.Duration) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic("can't load env")
+	}
+	url, exists := os.LookupEnv("LOGGING_URL")
+	if !exists {
+		log.Panic("URL doesnt exist")
+	}
 	events := keylogger.Read()
 	storedApiData := LoggedActivity{}
 	var mu sync.Mutex
@@ -79,12 +90,16 @@ func SendDataFromLogger(keylogger activitylogger.Keylogger, delay time.Duration)
 		mu.Unlock()
 
 		go func(data LoggedActivity) {
+			if !isValidLog(data) {
+				log.Printf("empty log data %v", data)
+				return
+			}
 			jsonBody, err := json.Marshal(data)
 			if err != nil {
 				log.Printf("Error marshaling JSON: %v", err)
 				return
 			}
-			url := "http://localhost:8000/log"
+
 			err = sendRequest("POST", url, bytes.NewBuffer(jsonBody))
 			if err != nil {
 				log.Printf("Error sending request: %v", err)
@@ -97,7 +112,14 @@ func SendDataFromLoggers(keyloggers []activitylogger.Keylogger, delay time.Durat
 	storedApiData := LoggedActivity{}
 
 	var wg sync.WaitGroup
-
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic("can't load env")
+	}
+	url, exists := os.LookupEnv("LOGGING_URL")
+	if !exists {
+		log.Panic("URL doesnt exist")
+	}
 	for _, keylogger := range keyloggers {
 		wg.Add(1)
 		go func(k activitylogger.Keylogger) {
@@ -123,12 +145,16 @@ func SendDataFromLoggers(keyloggers []activitylogger.Keylogger, delay time.Durat
 			mu.Unlock()
 
 			go func(data LoggedActivity) {
+				if !isValidLog(data) {
+					log.Printf("empty log data %v", data)
+					return
+				}
 				jsonBody, err := json.Marshal(data)
 				if err != nil {
 					log.Printf("Error marshaling JSON: %v", err)
 					return
 				}
-				url := "http://localhost:8000/log"
+
 				err = sendRequest("POST", url, bytes.NewBuffer(jsonBody))
 				if err != nil {
 					log.Printf("Error sending request: %v", err)
@@ -189,7 +215,6 @@ func GetDevPaths() []uint {
 	sort.Ints(events[:])
 	inputDevices := getInputDevices(events)
 	allowedDevEvents := getAllowedDevEvents(inputDevices)
-
 	return allowedDevEvents
 }
 
@@ -234,4 +259,13 @@ func getInputDevices(events []int) map[int]string {
 func normalizeString(s string) string {
 	re := regexp.MustCompile(`\s+`)
 	return strings.ToLower(re.ReplaceAllString(s, ""))
+}
+
+// make a checker to only send data if we have any data to be sent
+
+func isValidLog(data LoggedActivity) bool {
+	if data.ExtraClicks != 0 || data.Key != 0 || data.LeftClicks != 0 || data.RightClicks != 0 || data.MiddleClicks != 0 {
+		return true
+	}
+	return false
 }
