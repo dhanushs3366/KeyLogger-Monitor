@@ -37,7 +37,7 @@ const (
 
 type devices []string
 
-var AllowedDevices = devices{"Asus Keyboard", "LangTu USB Keyboard", "Razer Razer Viper 8KHz"}
+var AllowedDevices = devices{"Asus Keyboard", "LangTu USB Keyboard", "Razer Razer Viper 8KHz", "SONiX Trinity Keyboard"}
 
 /*
 	@TODO:
